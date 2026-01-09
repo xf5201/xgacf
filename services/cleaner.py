@@ -23,7 +23,6 @@ class OrderCleaner:
                 # 使用 logger.exception 会自动打印完整的堆栈信息
                 logger.exception(f"❌ Cleaner Error: {e}")
             
-            # ✅ 核心修复：无论上面是否出错，都休眠固定时间，防止死循环导致CPU飙升
             await asyncio.sleep(self.check_interval)
 
     async def clean_pending_orders(self):
