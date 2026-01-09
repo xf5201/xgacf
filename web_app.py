@@ -9,10 +9,6 @@ from core.config import config
 logger = logging.getLogger(__name__)
 
 async def handle_okpay_notify(request: web.Request):
-    """
-    处理 OkPay 支付回调
-    文档说明：数据格式 JSON，无 sign 字段
-    """
     try:
         method = request.method
         client_ip = request.remote
@@ -24,7 +20,7 @@ async def handle_okpay_notify(request: web.Request):
         logger.info(f"🔧 当前 SERVER_DOMAIN: {config.SERVER_DOMAIN}")
         logger.info(f"🔧 当前 TESTNET: {config.TESTNET}")
 
-        # 处理 GET 请求（浏览器跳转）
+        
         if method == "GET":
             logger.info("🌐 浏览器访问支付成功页面")
 
@@ -78,11 +74,11 @@ async def handle_okpay_notify(request: web.Request):
             """
             return web.Response(text=html, content_type='text/html')
 
-        # 处理 POST 请求（OkPay 服务器回调）
+        
         elif method == "POST":
             logger.info("🔄 OkPay 服务器回调 (疑似)")
 
-            # 1. 先读原始 body 长度，方便 debug
+         
             raw_body = await request.read()
             logger.info(f"📦 原始请求体长度: {len(raw_body)} bytes")
             if len(raw_body) > 0:
@@ -91,7 +87,7 @@ async def handle_okpay_notify(request: web.Request):
                 except:
                     pass
 
-            # 2. 按文档，回调是 JSON 格式
+            
             try:
                 data = await request.json()
                 logger.info(f"📥 解析为 JSON: {data}")
@@ -102,7 +98,7 @@ async def handle_okpay_notify(request: web.Request):
                     "message": "Invalid JSON"
                 }, status=400)
 
-            # 3. 基本校验：必须包含 data 字段，且 data 里至少有 order_id
+           
             if not isinstance(data, dict):
                 logger.error("❌ 回调根对象不是 dict")
                 return web.json_response({
@@ -128,7 +124,7 @@ async def handle_okpay_notify(request: web.Request):
                 f"status={status} type={pay_type}"
             )
 
-            # 4. 只处理「充值」且「已支付」的回调
+           
             if pay_type != "deposit":
                 logger.info(f"ℹ️ 非充值类型回调 type={pay_type}，忽略")
                 return web.json_response({
@@ -143,7 +139,7 @@ async def handle_okpay_notify(request: web.Request):
                     "message": "Payment not completed yet"
                 })
 
-            # 5. 调用 okpay_service 处理支付成功逻辑（更新 DB + 发货）
+           
             success = await okpay_service.handle_notification(callback_data)
             if success:
                 logger.info("✅ 回调处理成功")
