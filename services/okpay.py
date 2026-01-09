@@ -36,7 +36,7 @@ class OkPay:
         """获取回调 URL"""
         base_url = config.SERVER_DOMAIN.rstrip('/') if config.SERVER_DOMAIN else ""
         if not base_url:
-            logger.warning("⚠️ SERVER_DOMAIN 未配置，回调地址为空！")
+            logger.warning("SERVER_DOMAIN 未配置，回调地址为空！")
         return f"{base_url}/okpay/notify"
 
     async def create_order(self, order_data: Dict) -> str:
@@ -53,7 +53,7 @@ class OkPay:
             }
 
             signed_data = self.sign(payload)
-            logger.info(f"📤 向 OkPay 发起创建订单请求: {order_data['order_id']}")
+            logger.info(f"向 OkPay 发起创建订单请求: {order_data['order_id']}")
 
             async with aiohttp.ClientSession() as session:
                 async with session.post(
@@ -70,17 +70,17 @@ class OkPay:
                     if result.get("code") == 10000 or result.get("status") == "success":
                         payment_url = result.get("data", {}).get("pay_url")
                         if payment_url:
-                            logger.info(f"✅ 订单创建成功，支付链接: {payment_url}")
+                            logger.info(f"订单创建成功，支付链接: {payment_url}")
                             return payment_url
                         else:
-                            logger.warning(f"⚠️ OkPay 返回成功但没有 pay_url: {result}")
+                            logger.warning(f" OkPay 返回成功但没有 pay_url: {result}")
                             return ""
                     else:
                         error_msg = result.get("msg") or result.get("message") or str(result)
                         raise Exception(f"OkPay API 错误: {error_msg}")
 
         except Exception as e:
-            logger.error(f"❌ OkPay 请求异常: {e}")
+            logger.error(f"OkPay 请求异常: {e}")
             raise e
 
     def verify_sign(self, data: Dict) -> bool:
@@ -92,14 +92,14 @@ class OkPay:
         del data_to_check['sign']
         signed_data = self.sign(data_to_check)
         calculated_sign = signed_data.get('sign')
-        logger.info(f"🔐 签名验证 - 接收到: {received_sign}, 计算得到: {calculated_sign}")
+        logger.info(f"签名验证 - 接收到: {received_sign}, 计算得到: {calculated_sign}")
         return received_sign == calculated_sign
 
     async def handle_notification(self, callback_data: dict) -> bool:
         """
         处理 OkPay 的回调通知
         """
-        logger.info(f"📨 收到 OkPay 回调 data: {callback_data}")
+        logger.info(f"收到 OkPay 回调 data: {callback_data}")
 
         order_id = callback_data.get("order_id")
         unique_id = callback_data.get("unique_id")
@@ -110,35 +110,35 @@ class OkPay:
         pay_type = callback_data.get("type")
 
         logger.info(
-            f"📌 解析回调字段: order_id={order_id} unique_id={unique_id} "
+            f"解析回调字段: order_id={order_id} unique_id={unique_id} "
             f"pay_user_id={pay_user_id} amount={amount} coin={coin} "
             f"status={status} type={pay_type}"
         )
 
         if not unique_id:
-            logger.warning("⚠️ 回调中没有 unique_id，无法处理")
+            logger.warning("回调中没有 unique_id，无法处理")
             return False
 
         if pay_type != "deposit" or status != 1:
             logger.info(
-                f"ℹ️ 不处理的回调状态: type={pay_type}, status={status}，忽略"
+                f"不处理的回调状态: type={pay_type}, status={status}，忽略"
             )
-            # ✅ 只要不是我们处理的类型，也返回 True，避免 OkPay 重试
+            # 只要不是我们处理的类型，也返回 True，避免 OkPay 重试
             return True
 
         current_order = await db.get_order(unique_id)
         if not current_order:
-            logger.warning(f"⚠️ 找不到订单 unique_id={unique_id}")
-            # ✅ 找不到订单也是 OkPay 的问题，不应该让它一直重试，返回 True
+            logger.warning(f"找不到订单 unique_id={unique_id}")
+            # 找不到订单也是 OkPay 的问题，不应该让它一直重试，返回 True
             return True
 
         current_status = current_order.get("status")
         
         if current_status == "completed":
-            logger.info(f"ℹ️ 订单 {unique_id} 已完成，跳过")
+            logger.info(f"订单 {unique_id} 已完成，跳过")
             return True
         
-        # ✅ 修复循环的核心逻辑：
+       
         # 即使发货失败，只要确认支付，就必须告诉 OkPay "收到" (return True)
         # 否则 OkPay 会一直重试回调直到成功
         
@@ -146,14 +146,12 @@ class OkPay:
             # 1. 更新状态为 paid (如果已经是 paid 则忽略)
             if current_status != "paid":
                 await db.update_order_status(unique_id, "paid")
-                logger.info(f"✅ 订单 {unique_id} 状态已确认为 paid")
-
-                # 2. 立即通知用户：已收到付款，正在开通
+            
                 if self.bot:
                     try:
                         await self.bot.send_message(
                             current_order.get("user_id"),
-                            f"✅ 已收到您的付款！\n\n"
+                            f"已收到您的付款！\n\n"
                             f"正在为您开通 Telegram Premium ({current_order.get('months')} 个月)，请稍候..."
                         )
                     except Exception as e:
@@ -163,15 +161,9 @@ class OkPay:
             # 只有状态不是 completed 时才尝试发货（防止已完成的重复发货）
             if current_status != "completed":
                 logger.info(
-                    f"🎁 [OkPay回调] 正在执行购买: @{current_order.get('target')} "
+                    f"[OkPay回调] 正在执行购买: @{current_order.get('target')} "
                     f"({current_order.get('months')}个月)..."
-                )
-
-                if config.TESTNET:
-                    logger.warning(f"🔧 TESTNET 模式: 跳过实际购买，模拟成功")
-                    success = True
-                else:
-                    success, msg = await fragment_service.execute_purchase(current_order)
+                ) fragment_service.execute_purchase(current_order)
 
                 if success:
                     # 4. 发货成功，更新为 completed
