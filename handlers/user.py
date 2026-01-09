@@ -17,9 +17,9 @@ router = Router()
 
 async def get_main_keyboard():
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="👤 为自己购买", callback_data="buy_self")],
-        [InlineKeyboardButton(text="👥 为他人购买", callback_data="buy_other")],
-        [InlineKeyboardButton(text="❓ 帮助说明", callback_data="help")]
+        [InlineKeyboardButton(text="为自己购买", callback_data="buy_self")],
+        [InlineKeyboardButton(text="为他人购买", callback_data="buy_other")],
+        [InlineKeyboardButton(text="帮助说明", callback_data="help")]
     ])
     return kb
 
@@ -28,7 +28,7 @@ async def get_months_keyboard(username: str):
         [InlineKeyboardButton(text="3 个月 (约 30 USDT)", callback_data=f"select_months:{username}:3")],
         [InlineKeyboardButton(text="6 个月 (约 50 USDT)", callback_data=f"select_months:{username}:6")],
         [InlineKeyboardButton(text="12 个月 (约 90 USDT)", callback_data=f"select_months:{username}:12")],
-        [InlineKeyboardButton(text="🔙 返回主菜单", callback_data="back_to_menu")]
+        [InlineKeyboardButton(text="返回主菜单", callback_data="back_to_menu")]
     ])
     return kb
 
@@ -36,32 +36,25 @@ async def get_currency_keyboard(username: str, months: int, price: float):
     amount_ton = round(price / config.TON_PRICE_USDT, 2)
     
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💎 TON (USDT-Jetton)", callback_data=f"pay:{months}:{username}:ton:{amount_ton}:{price}")],
-        [InlineKeyboardButton(text="🟡 TRC20 (USDT)", callback_data=f"pay:{months}:{username}:trc20:{price}")],
-        [InlineKeyboardButton(text="🔴 OkPay (快捷支付)", callback_data=f"pay:{months}:{username}:okpay:{price}")],
-        [InlineKeyboardButton(text="🔙 重新选择月份", callback_data=f"reselect:{username}")]
+        [InlineKeyboardButton(text="TON (USDT-Jetton)", callback_data=f"pay:{months}:{username}:ton:{amount_ton}:{price}")],
+        [InlineKeyboardButton(text="TRC20 (USDT)", callback_data=f"pay:{months}:{username}:trc20:{price}")],
+        [InlineKeyboardButton(text="OkPay (okpay钱包)", callback_data=f"pay:{months}:{username}:okpay:{price}")],
+        [InlineKeyboardButton(text="重新选择月份", callback_data=f"reselect:{username}")]
     ])
     return kb
 
 async def get_payment_keyboard(order_id: str, payment_method: str = "ton", payment_url: str = None):
-    """
-    根据支付方式生成按钮组
-    payment_url: 仅用于 OkPay，生成跳转支付按钮
-    """
     buttons = []
-
-    # 1. OkPay 专属：前往支付按钮 (如果提供了 URL)
-    # 即使刷新后，只要数据库里有这个链接，按钮就会保留
     if payment_method == "okpay" and payment_url:
-        buttons.append([InlineKeyboardButton(text="🔗 前往 OkPay 支付", url=payment_url)])
+        buttons.append([InlineKeyboardButton(text="点击前往 OkPay 支付", url=payment_url)])
 
     # 2. 我已完成支付按钮 (所有支付方式通用)
     # 加密货币点击后触发监控，OkPay 点击后仅提示收到
-    buttons.append([InlineKeyboardButton(text="✅ 我已完成支付", callback_data=f"check:{order_id}")])
+    buttons.append([InlineKeyboardButton(text="我已完成支付", callback_data=f"check:{order_id}")])
 
     # 3. 通用功能按钮
-    buttons.append([InlineKeyboardButton(text="❌ 取消订单", callback_data=f"cancel:{order_id}")])
-    buttons.append([InlineKeyboardButton(text="🔙 返回主菜单", callback_data="back_to_menu")])
+    buttons.append([InlineKeyboardButton(text="取消订单", callback_data=f"cancel:{order_id}")])
+    buttons.append([InlineKeyboardButton(text="返回主菜单", callback_data="back_to_menu")])
     
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -70,7 +63,7 @@ async def get_payment_keyboard(order_id: str, payment_method: str = "ton", payme
 @router.message(F.text == "/start")
 async def cmd_start(message: Message):
     await message.answer(
-        "👋 欢迎使用 Premium 充值机器人！\n\n"
+        "欢迎使用小刚会员充值机器人！\n\n"
         "请选择您的购买方式：",
         reply_markup=await get_main_keyboard()
     )
@@ -94,7 +87,7 @@ async def process_buy_self(callback: CallbackQuery):
     
     try:
         await callback.message.edit_text(
-            f"📅 正在为 **@{username}** 购买会员。\n\n"
+            f"正在为 **@{username}** 购买会员。\n\n"
             "请选择充值时长：",
             parse_mode="Markdown",
             reply_markup=await get_months_keyboard(username)
@@ -112,17 +105,12 @@ async def process_buy_other(callback: CallbackQuery):
     
     try:
         await callback.message.edit_text(
-            "👥 请输入要充值的 Telegram 用户名 (不带 @)。\n\n"
-            "👇 请直接输入：",
+            "请输入要充值的 Telegram 用户名 (不带 @)。\n\n"
+            "请直接输入：",
             reply_markup=None
         )
     except TelegramBadRequest:
         pass
-
-    await callback.message.answer(
-        "👇 在此输入用户名:",
-        reply_markup=ForceReply(selective=True)
-    )
 
 @router.message(F.text)
 async def handle_manual_username_input(message: Message):
@@ -138,7 +126,7 @@ async def handle_manual_username_input(message: Message):
     username = text
     
     await message.answer(
-        f"📅 正在为 **@{username}** 购买会员。\n\n"
+        f"正在为 **@{username}** 购买会员。\n\n"
         "请选择充值时长：",
         parse_mode="Markdown",
         reply_markup=await get_months_keyboard(username)
@@ -166,7 +154,7 @@ async def process_select_months(callback: CallbackQuery):
             else: price_usdt = 28.0
 
         text = (
-            f"📦 **订单确认**\n\n"
+            f"**订单确认**\n\n"
             f"用户: @{username}\n"
             f"时长: {months} 个月\n"
             f"价格: **{price_usdt} USDT**\n\n"
@@ -183,7 +171,7 @@ async def reselect_months(callback: CallbackQuery):
     username = callback.data.split(":")[1]
     try:
         await callback.message.edit_text(
-            f"📅 正在为 **@{username}** 购买。\n\n"
+            f"正在为 **@{username}** 购买。\n\n"
             "请选择充值时长：",
             parse_mode="Markdown",
             reply_markup=await get_months_keyboard(username)
@@ -195,7 +183,7 @@ async def reselect_months(callback: CallbackQuery):
 async def process_currency(callback: CallbackQuery):
     """处理支付方式选择"""
     try:
-        await callback.answer("⏳ 正在生成支付地址...")
+        await callback.answer("正在生成支付地址...")
     except:
         pass
 
@@ -245,16 +233,16 @@ async def process_currency(callback: CallbackQuery):
                 ton_addr = wallet_info["jetton_addr"]
             except Exception as e:
                 logger.error(f"TON Error: {e}")
-                await callback.message.edit_text("❌ TON 钱包生成失败，请重试。")
+                await callback.message.edit_text("TON 钱包生成失败，请重试。或者联系管理员")
                 return
             
             text = (
-                f"💰 **订单已创建**\n\n"
-                f"📅 ID: `{order_id}`\n"
-                f"👤 对象: @{username} ( {months} 月 )\n"
-                f"💵 金额: **{price_usdt} USDT**\n"
-                f"⚖️ 汇率: {amount_ton} TON\n\n"
-                f"👛 **请转账 USDT-Jetton 至:**\n"
+                f"**订单已创建**\n\n"
+                f"ID: `{order_id}`\n"
+                f"对象: @{username} ( {months} 月 )\n"
+                f"金额: **{price_usdt} USDT**\n"
+                f"汇率: {amount_ton} TON\n\n"
+                f"**请转账 USDT-Jetton 至:**\n"
                 f"`{ton_addr}`"
             )
 
@@ -263,15 +251,15 @@ async def process_currency(callback: CallbackQuery):
                 trc20_addr = hd_manager.generate_trc20_wallet(wallet_index)
             except Exception as e:
                 logger.error(f"TRON Error: {e}")
-                await callback.message.edit_text("❌ TRON 钱包生成失败，请重试。")
+                await callback.message.edit_text("TRON 钱包生成失败，请重试。")
                 return
 
             text = (
-                f"💰 **订单已创建**\n\n"
-                f"📅 ID: `{order_id}`\n"
-                f"👤 对象: @{username} ( {months} 月 )\n"
-                f"💵 金额: **{price_usdt} USDT** (TRC20)\n\n"
-                f"👛 **请转账 USDT-TRC20 至:**\n"
+                f"**订单已创建**\n\n"
+                f"ID: `{order_id}`\n"
+                f"对象: @{username} ( {months} 月 )\n"
+                f"金额: **{price_usdt} USDT** (TRC20)\n\n"
+                f"**请转账 USDT-TRC20 至:**\n"
                 f"`{trc20_addr}`"
             )
 
@@ -284,20 +272,16 @@ async def process_currency(callback: CallbackQuery):
                 })
             except Exception as e:
                 logger.error(f"OkPay Error: {e}")
-                await callback.message.edit_text("❌ 支付网关失败，请重试。")
+                await callback.message.edit_text("支付网关失败，请重试。")
                 return
 
             text = (
-                f"💰 **订单已创建**\n\n"
-                f"📅 ID: `{order_id}`\n"
-                f"👤 对象: @{username} ( {months} 月 )\n"
-                f"💵 金额: **{price_usdt} USDT**\n\n"
+                f"**订单已创建**\n\n"
+                f"ID: `{order_id}`\n"
+                f"对象: @{username} ( {months} 月 )\n"
+                f"金额: **{price_usdt} USDT**\n\n"
                 f"请点击下方按钮跳转完成支付。"
             )
-
-        # 2. 更新数据库中的钱包地址和支付链接
-        # ⚠️ 注意：这里我们将 okpay_url 传给了 update_order_wallet
-        # 请确保你的 db.update_order_wallet 方法使用了 **kwargs，否则需要手动修改数据库方法
         await db.update_order_wallet(order_id, ton_addr=ton_addr, trc20_addr=trc20_addr, okpay_url=okpay_url)
         
         # 3. 显示支付确认界面
@@ -323,9 +307,9 @@ async def check_payment_status(callback: CallbackQuery):
         # 这里对 OkPay 给出的反馈稍微不同
         order = await db.get_order(order_id)
         if order and order.get('payment_method') == 'okpay' and order.get('status') == 'pending':
-             await callback.answer("⏳ 收到通知，正在确认支付状态...")
+             await callback.answer("收到通知，正在确认支付状态...")
         else:
-             await callback.answer("⏳ 正在查询订单状态...")
+             await callback.answer("正在查询订单状态...")
     except:
         pass
     
@@ -334,7 +318,7 @@ async def check_payment_status(callback: CallbackQuery):
         order = await db.get_order(order_id)
         
         if not order:
-            await callback.message.edit_text("❌ 订单不存在")
+            await callback.message.edit_text(" 订单不存在")
             return
 
         method = order.get('payment_method')
@@ -344,18 +328,18 @@ async def check_payment_status(callback: CallbackQuery):
         # --- 场景 1: OkPay 支付 ---
         if method == "okpay":
             if status in ('paid', 'completed'):
-                msg = "✅ 支付成功！会员已到账。"
+                msg = "支付成功！会员已到账。"
                 kb = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🔙 返回主菜单", callback_data="back_to_menu")]
+                    [InlineKeyboardButton(text="返回主菜单", callback_data="back_to_menu")]
                 ])
                 await callback.message.edit_text(msg, reply_markup=kb)
                 return
             
             if status == 'pending':
                 msg = (
-                    "⏳ 支付网关正在处理您的订单。\n"
+                    "正在处理您的订单。\n"
                     "支付成功后，系统将自动发货，请留意通知。\n"
-                    "若支付完成但未到账，请点击按钮刷新。"
+                    "若支付完成15分钟但未到账，请联系客服"
                 )
                 # 生成键盘，传入 current_okpay_url 保证刷新后按钮还在
                 kb = await get_payment_keyboard(order_id, method, current_okpay_url)
@@ -365,14 +349,14 @@ async def check_payment_status(callback: CallbackQuery):
         # --- 场景 2: TON/TRC20 (链上监控) ---
         else: 
             if status == 'checking':
-                msg = "⏳ 系统正在核实区块链交易，请稍候..."
+                msg = "系统正在核实区块链交易，请稍候..."
                 await callback.message.edit_text(msg, parse_mode="Markdown")
                 return
 
             if status in ('paid', 'completed'):
-                msg = "✅ 充值成功！会员已到账。"
+                msg = "充值成功！会员已到账。"
                 kb = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🔙 返回主菜单", callback_data="back_to_menu")]
+                    [InlineKeyboardButton(text="返回主菜单", callback_data="back_to_menu")]
                 ])
                 await callback.message.edit_text(msg, reply_markup=kb)
                 return
@@ -383,12 +367,12 @@ async def check_payment_status(callback: CallbackQuery):
                 logger.info(f"用户 {callback.from_user.id} 确认支付订单 {order_id}，状态变更为 checking")
                 
                 msg = (
-                    "✅ 已收到您的支付确认通知。\n"
-                    "⏳ 系统正在核实链上交易数据，通常需要 1-3 分钟。\n"
+                    "已收到您的支付确认通知。\n"
+                    "系统正在核实链上交易数据，通常需要 1-3 分钟。\n"
                     "请勿取消订单..."
                 )
                 kb = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🔙 返回主菜单", callback_data="back_to_menu")]
+                    [InlineKeyboardButton(text="返回主菜单", callback_data="back_to_menu")]
                 ])
                 await callback.message.edit_text(msg, parse_mode="Markdown", reply_markup=kb)
 
@@ -409,16 +393,16 @@ async def cancel_order_handler(callback: CallbackQuery):
         order = await db.get_order(order_id)
         
         if not order:
-            await callback.message.edit_text("❌ 订单不存在。", reply_markup=await get_main_keyboard())
+            await callback.message.edit_text(" 订单不存在。", reply_markup=await get_main_keyboard())
             return
 
         status = order.get('status')
 
         if status in ('paid', 'completed', 'checking'):
             if status == 'checking':
-                await callback.answer("⚠️ 订单正在核实中，无法直接取消，请联系客服。", show_alert=True)
+                await callback.answer("订单正在核实中，无法直接取消，请联系客服。", show_alert=True)
             else:
-                await callback.answer("⚠️ 订单已支付或正在处理，无法取消！", show_alert=True)
+                await callback.answer("订单已支付或正在处理，无法取消！", show_alert=True)
             return
 
         if status == 'pending':
@@ -426,16 +410,16 @@ async def cancel_order_handler(callback: CallbackQuery):
             logger.info(f"用户 {callback.from_user.id} 取消了订单 {order_id}")
             
             await callback.message.edit_text(
-                "❌ 订单已取消。", 
+                "订单已取消。", 
                 reply_markup=await get_main_keyboard()
             )
         else:
-            await callback.message.edit_text("⚠️ 当前订单状态无法取消。")
+            await callback.message.edit_text(" 当前订单状态无法取消。")
 
     except Exception as e:
         logger.error(f"取消订单失败: {e}")
         try:
-            await callback.message.edit_text("❌ 取消失败，请重试。")
+            await callback.message.edit_text(" 取消失败，请重试。")
         except:
             pass
 
@@ -448,7 +432,7 @@ async def back_to_menu(callback: CallbackQuery):
         pass
     
     await callback.message.edit_text(
-        "🏠 返回主菜单",
+        "返回主菜单",
         reply_markup=await get_main_keyboard()
     )
 
@@ -460,7 +444,7 @@ async def show_help(callback: CallbackQuery):
     except:
         pass
     await callback.message.edit_text(
-        "❓ **帮助说明**\n\n"
+        " **帮助说明**\n\n"
         "1. 点击为自己/他人购买。\n"
         "2. 选择购买时长。\n"
         "3. 选择支付方式并完成转账。\n"
