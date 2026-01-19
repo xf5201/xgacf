@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/xgacf/main.py", line 9, in <module>
+    from handlers.user import router
+  File "/home/ubuntu/xgacf/handlers/user.py", line 7, in <module>
+    from core.database import db
+  File "/home/ubuntu/xgacf/core/database.py", line 127
+    await self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);")
+IndentationError: unexpected indent
